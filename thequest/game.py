@@ -1,6 +1,7 @@
 import pygame as pg
 import os
 from . import ALTO_P, ANCHO_P
+from .screens import PantallaPrincipal
 
 class Quest:
     def __init__(self):
@@ -11,3 +12,5 @@ class Quest:
         pg.display.set_icon(icono_juego)
         pg.display.set_caption("THE QUEST")
         pg.mixer.init()
+    
+        
