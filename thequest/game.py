@@ -1,21 +1,36 @@
 import pygame as pg
 
-from . import ALTO_P, ANCHO_P
-from thequest.screens import Pantalla, PantallaPrincipal, PantallaJuego
+from . import ALTO_P, ANCHO_P, VIDAS
+from .screens import PantallaPrincipal, PantallaJuego, PantallaJuego2, PantallaRecords
+from .objects import Marcador
 
 
 class Quest:
     def __init__(self):
-        print("Arranca el juego")
         pg.init()
         self.display = pg.display.set_mode((ANCHO_P, ALTO_P))
         pg.display.set_caption("THE QUEST")
         pg.mixer.init()
-        self.pantallas = [
-            Pantalla(self.display),
-            PantallaPrincipal(self.display),
-            PantallaJuego(self.display)]
 
     def jugar(self):
-        for pantalla in self.pantallas:
-            pantalla.bucle_principal()
+        contador_pantallas = 0
+        while contador_pantallas < 4:
+            if contador_pantallas == 0:
+                pantalla_activa = PantallaPrincipal(self.display)
+            if contador_pantallas == 1:
+                self.marcador = Marcador(VIDAS)
+                pantalla_activa = PantallaJuego(
+                    self.display, self.marcador)
+            if contador_pantallas == 2:
+                pantalla_activa = PantallaJuego2(
+                    self.display, self.marcador)
+            if contador_pantallas == 3:
+                pantalla_activa = PantallaRecords(self.display)
+
+            en_juego = pantalla_activa.bucle_principal()
+            if en_juego == True:
+                contador_pantallas = 3
+            else:
+                contador_pantallas += 1
+            if contador_pantallas == 4:
+                contador_pantallas = 0
