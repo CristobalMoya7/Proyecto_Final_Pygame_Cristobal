@@ -2,7 +2,7 @@ import os
 import random
 import pygame as pg
 
-from . import ANCHO_P, ALTO_P, COLOR_TEXTO, COLOR_TEXTO2, FPS, MUSICA_FADE_OUT, PUNTOS_PARTIDA, RUTA
+from . import ANCHO_P, ALTO_P, COLOR_TEXTO, COLOR_TEXTO2, FPS, METEORITOS_M_NIVEL_1, METEORITOS_M_NIVEL_2, METEORITOS_NIVEL_1, METEORITOS_NIVEL_2, MUSICA_FADE_OUT, PUNTOS_1, PUNTOS_2, PUNTOS_M_1, PUNTOS_M_2, PUNTOS_PARTIDA, RUTA
 
 from .objects import Explosion, Meteorito, MeteoritoMediano, Nave, Planeta
 from .records import GestorBD, InputBox
@@ -35,7 +35,6 @@ class PantallaPrincipal(Pantalla):
         while not salir:
             for event in pg.event.get():
                 if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
-                    # pg.mixer.music.stop()
                     salir = True
                 if event.type == pg.QUIT:
                     pg.quit()
@@ -54,11 +53,7 @@ class PantallaPrincipal(Pantalla):
     def pintar_texto_instrucciones(self):
 
         posiciones = [275, 350, 400, 450, 500, 550]
-        mensajes = ["Como jugar:", "1. Pulsa ARRIBA/ABAJO para mover la nave.",
-                    "2. Esquiva los meteoritos para ganar puntos.",
-                    "4. Tienes 3 vidas. "
-                    "Pierdes vidas si chocas con los meteoritos.",
-                    "5. Aguanta el tiempo suficiente para aterrizar en el planeta."]
+        mensajes = ["AÑADIR"]
 
         pos_x = ANCHO_P - 800
         conta_posiciones = 0
@@ -71,7 +66,7 @@ class PantallaPrincipal(Pantalla):
             conta_posiciones += 1
 
     def pintar_texto_partida(self):
-        mensaje = "Pulsa 'ESPACIO' para comenzar la partida"
+        mensaje = 'Pulsa "ESPACIO" para comenzar la partida'
         texto = self.tipo_juego.render(mensaje, True, COLOR_TEXTO2)
         ancho_texto = texto.get_width()
         pos_x = (ANCHO_P - ancho_texto)/2
@@ -97,10 +92,11 @@ class PantallaJuego(Pantalla):
 
         # creación de los meteoritos
         self.meteoritos = pg.sprite.Group()
-        self.crear_meteoritos()
+        self.crear_meteoritos(METEORITOS_NIVEL_1, PUNTOS_1)
 
         self.meteoritos_m = pg.sprite.Group()
-        self.crear_meteoritos_m()
+        self.crear_meteoritos_m(METEORITOS_M_NIVEL_1, PUNTOS_M_1)
+
 
         # creación del planeta
         imagen_planeta1 = pg.image.load(os.path.join("resources", "images",
@@ -117,9 +113,6 @@ class PantallaJuego(Pantalla):
         self.sonido_explosion = pg.mixer.Sound(os.path.join(
             "resources", "sounds", "sonido_explosion.wav"))
 
-        self.sonido_meteorito = pg.mixer.Sound(os.path.join(
-            "resources", "sounds", "sonido_meteorito.mp3"))
-
         # carga de la música del juego
         self.musica = pg.mixer.music.load(os.path.join(
             "resources", "sounds", "musica_juego.mp3"))
@@ -130,9 +123,11 @@ class PantallaJuego(Pantalla):
         # Punto para empezar a contar los ticks del juego
         ticks_juego = pg.time.get_ticks()
 
-        # Flags de salida del juego y de fase de aterrizaje
+        # Flags de salida del juego
         salir = False
         game_over = False
+
+        # Flag de la fase de aterrizaje
         aterrizaje = False
 
         # Reproducción de la música del juego (en bucle)
@@ -143,17 +138,13 @@ class PantallaJuego(Pantalla):
 
             # para medir el tiempo que transcurre durante la partida
             contador_juego = (pg.time.get_ticks() - ticks_juego)//1000
-            # print(contador_juego)
-            """
-            Parte comentada para pruebas: activa, mide los FPS por seg. para
-            ver problemas de ejecución del juego
-            """
-            #tiempo_fps = self.reloj.get_fps()
-            # print(tiempo_fps)
-            # Condición para cerrar el juego si pulsamos la X de la ventana
+
+            # Condición para cerrar pygame si pulsamos la X de la ventana
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     pg.quit()
+                if event.type == pg.KEYDOWN and event.key == pg.K_SPACE:
+                    salir = True
 
             # Para pintar el fondo del nivel
             self.pintar_fondo()
@@ -166,7 +157,8 @@ class PantallaJuego(Pantalla):
 
             # Colisión de la nave con meteorito, aparece explosion (efecto y sonido) y
             # desaparece la nave. También desactiva colisiones durante el aterrizaje
-            self.comportamiento_meteoritos(aterrizaje)
+            self.comportamiento_meteoritos(aterrizaje,
+                                           METEORITOS_NIVEL_1, PUNTOS_1, METEORITOS_M_NIVEL_1, PUNTOS_M_1)
 
             # Para pintar el marcador de puntos
             self.marcador.pintar_marcador(self.pantalla)
@@ -178,56 +170,42 @@ class PantallaJuego(Pantalla):
             # Condiciones para realizar la finalización de nivel 1
             if self.jugador.fin_rotacion:
                 self.pintar_fin_nivel("¡NIVEL 1 SUPERADO!")
-            if contador_juego == 60:
-                salir = True
+                self.pintar_nivel_2()
 
             # Actualización de todos los elementos que se están mostrando en la partida
             pg.display.flip()
 
             # Para cerrar el juego si se pierden todas las vidas
             if self.marcador.vidas == 0:
+                self.pintar_fin_nivel("HAS PERDIDO :(")
                 game_over = True
-                pg.mixer.music.fadeout(MUSICA_FADE_OUT)
-                bd = GestorBD(RUTA)
-                record_minimo = bd.comprobarRecord()
-                if record_minimo == None:
-                    inputbox = InputBox(self.pantalla)
-                    nombre = inputbox.recoger_nombre()
-                    bd.guardarRecords(nombre, self.marcador.valor)
-                    salir = True
-                elif record_minimo != None and record_minimo < self.marcador.valor:
-                    inputbox = InputBox(self.pantalla)
-                    nombre = inputbox.recoger_nombre()
-                    bd.actualizarRecord(
-                        nombre, self.marcador.valor, record_minimo)
-                    salir = True
-                else:
-                    pg.mixer.music.stop()
-                    salir = True
+                self.lanzarRecord()
+                salir = True
 
         return game_over
 
-    # -------------MÉTODOS DE FUNCIONAMIENTO FUERA DEL BUCLE PRINCIPAL-----------#
+    # -------------MÉTODOS DE FUNCIONAMIENTO PERTENECIENTES A LA PARTIDA-----------#
 
-    def crear_meteoritos(self):
-        """"Este método genera los meteoritos grandes al inicio de la partida, les asigna puntuación y
+    def crear_meteoritos(self, numero, no_puntos):
+        """"Método que genera los meteoritos grandes al inicio de la partida, les asigna puntuación y
         es llamado de nuevo desde el método regenerar las veces que el meteorito finaliza su ciclo de vida"""""
-        cantidad_meteoritos = random.randrange(1, 3)
+        cantidad_meteoritos = random.randrange(numero)
         for i in range(cantidad_meteoritos):
-            puntos = (i + 10) - i
+            puntos = (i + no_puntos) - i
             meteorito = Meteorito(puntos)
             self.meteoritos.add(meteorito)
 
-    def crear_meteoritos_m(self):
-        """"Este método genera los meteoritos medianos al inicio de la partida, les asigna puntuación
+    def crear_meteoritos_m(self, numero, no_puntos):
+        """"Método que genera los meteoritos medianos al inicio de la partida, les asigna puntuación
          y es llamado de nuevo desde el método regenerar las veces que el meteorito finaliza su ciclo de vida"""""
-        cantidad_meteoritos_m = random.randrange(2, 4)
+        cantidad_meteoritos_m = random.randrange(numero)
         for i in range(cantidad_meteoritos_m):
-            puntos_m = (i + 20) - i
+            puntos_m = (i + no_puntos) - i
             meteorito_m = MeteoritoMediano(puntos_m)
             self.meteoritos_m.add(meteorito_m)
 
-    def comportamiento_meteoritos(self, aterrizar):
+    def comportamiento_meteoritos(self, aterrizar, numero, puntos, numero_m, puntos_m):
+        "Método que controla el comportamiento de los meteoritos de la partida"
         if not aterrizar:
             colision = pg.sprite.spritecollide(
                 self.jugador, self.meteoritos, True)
@@ -244,24 +222,40 @@ class PantallaJuego(Pantalla):
             for meteorito in self.meteoritos.sprites():
                 if meteorito.rect.right < 0:
                     if not self.jugador.nave_escondida:
-                        self.marcador.aumentar(meteorito.puntos)
+                        self.marcador.aumentar_puntos(meteorito.puntos)
                     self.meteoritos.remove(meteorito)
             if len(self.meteoritos.sprites()) < 1:
-                self.crear_meteoritos()
+                self.crear_meteoritos(numero, puntos)
 
             for meteorito_m in self.meteoritos_m.sprites():
                 if meteorito_m.rect.right < 0:
                     if not self.jugador.nave_escondida:
-                        self.marcador.aumentar(meteorito_m.puntos)
+                        self.marcador.aumentar_puntos(meteorito_m.puntos)
                     self.meteoritos_m.remove(meteorito_m)
             if len(self.meteoritos_m.sprites()) < 1:
-                self.crear_meteoritos_m()
+                self.crear_meteoritos_m(numero_m, puntos_m)
         else:
             self.meteoritos.clear(self.pantalla, self.pantalla)
             self.meteoritos_m.clear(self.pantalla, self.pantalla)
 
+    def lanzarRecord(self):
+        "Método que controla las condiciones para lanzar la recogida de record"
+        pg.mixer.music.fadeout(MUSICA_FADE_OUT)
+        bd = GestorBD(RUTA)
+        record_minimo = bd.comprobarRecord()
+        if record_minimo == None and self.marcador.valor != 0:
+            inputbox = InputBox(self.pantalla)
+            nombre = inputbox.recoger_nombre()
+            bd.guardarRecords(nombre, self.marcador.valor)
+        if record_minimo != None and record_minimo < self.marcador.valor:
+            if self.marcador.valor != 0:
+                inputbox = InputBox(self.pantalla)
+                nombre = inputbox.recoger_nombre()
+                bd.actualizarRecord(
+                    nombre, self.marcador.valor, record_minimo)
+
     def mover_nave_planeta(self, aterrizar):
-        "Este método incluye las maniobras de la nave y el comportamiento del planeta"
+        "Método que incluye las maniobras de la nave y el comportamiento del planeta"
         self.jugador.update()
         if not aterrizar:
             self.pantalla.blit(self.jugador.image, self.jugador.rect)
@@ -271,7 +265,7 @@ class PantallaJuego(Pantalla):
             self.jugador.aterrizar_nave(aterrizar, self.pantalla)
 
     def pintar_fin_nivel(self, texto):
-        "Este método pinta el mensaje que indica el fin del nivel"
+        "Método que pinta el mensaje que indica el fin del nivel"
         font_file = os.path.join("resources", "fonts",
                                  "light_sans_serif_7.ttf")
         self.tipografia = pg.font.Font(font_file, 50)
@@ -282,8 +276,20 @@ class PantallaJuego(Pantalla):
         pos_y = texto.get_height()*3
         self.pantalla.blit(texto, (pos_x, pos_y))
 
+    def pintar_nivel_2(self):
+        "Método que pinta el mensaje de continuar al nivel 2"
+        font_file = os.path.join("resources", "fonts",
+                                 "light_sans_serif_7.ttf")
+        self.tipografia = pg.font.Font(font_file, 50)
+        mensaje = 'Pulsa "ESPACIO" para ir al nivel 2'
+        texto = self.tipografia.render(mensaje, True, COLOR_TEXTO2)
+        ancho_texto = texto.get_width()
+        pos_x = (ANCHO_P - ancho_texto)/2
+        pos_y = (ALTO_P - texto.get_height()) - 100
+        self.pantalla.blit(texto, (pos_x, pos_y))
+
     def pintar_fondo(self):
-        "Este método pinta el fondo de estrellas de la pantalla del juego"
+        "Este método pinta el fondo de la pantalla del juego"
         self.fondo = pg.image.load(os.path.join(
             "resources", "images", "fondo_nivel.jpg"))
         self.pantalla.blit(self.fondo, (0, 0))
@@ -306,6 +312,13 @@ class PantallaJuego2(PantallaJuego):
     def __init__(self, pantalla: pg.Surface, marcador):
         super().__init__(pantalla, marcador)
 
+        # creación de los meteoritos
+        self.meteoritos = pg.sprite.Group()
+        self.crear_meteoritos(METEORITOS_NIVEL_2, PUNTOS_2)
+
+        self.meteoritos_m = pg.sprite.Group()
+        self.crear_meteoritos_m(METEORITOS_M_NIVEL_2, PUNTOS_M_2)
+
         # creación del planeta
         imagen_planeta2 = pg.image.load(os.path.join("resources", "images",
                                                      "planeta2.png"))
@@ -317,9 +330,11 @@ class PantallaJuego2(PantallaJuego):
         # Punto para empezar a contar los ticks del juego
         ticks_juego = pg.time.get_ticks()
 
-        # Flags de salida del juego y de fase de aterrizaje
+        # Flags de salida del juego
         salir = False
         game_over = False
+
+        # Flag de la fase de aterrizaje
         aterrizaje = False
 
         # Reproducción de la música del juego (en bucle)
@@ -330,15 +345,8 @@ class PantallaJuego2(PantallaJuego):
 
             # para medir el tiempo que transcurre durante la partida
             contador_juego = (pg.time.get_ticks() - ticks_juego)//1000
-            # print(contador_juego)
-            """
-            Parte comentada para pruebas: activa, mide los FPS por seg. para
-            ver problemas de ejecución del juego
-            """
-            #tiempo_fps = self.reloj.get_fps()
-            # print(tiempo_fps)
 
-            # Condición para cerrar el juego si pulsamos la X de la ventana
+            # Condición para pygame si pulsamos la X de la ventana
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     pg.quit()
@@ -354,13 +362,14 @@ class PantallaJuego2(PantallaJuego):
 
             # Colisión de la nave con meteorito, aparece explosion (efecto y sonido) y
             # desaparece la nave. También desactiva colisiones durante el aterrizaje
-            self.comportamiento_meteoritos(aterrizaje)
+            self.comportamiento_meteoritos(aterrizaje,
+                                           METEORITOS_NIVEL_2, PUNTOS_2, METEORITOS_M_NIVEL_2, PUNTOS_M_2)
 
             # Para pintar el marcador de puntos
             self.marcador.pintar_marcador(self.pantalla)
 
+
             # Condición que activa el flag de aterrizaje (Tiempo transcurrido)
-            print(aterrizaje, contador_juego)
             if contador_juego == 90:
                 aterrizaje = True
 
@@ -368,70 +377,21 @@ class PantallaJuego2(PantallaJuego):
             if self.jugador.fin_rotacion:
                 self.pintar_fin_nivel("¡ENHORABUENA! HAS GANADO")
 
-            if contador_juego == 105:
-                pg.mixer.music.fadeout(MUSICA_FADE_OUT)
-                bd = GestorBD(RUTA)
-                record_minimo = bd.comprobarRecord()
-                if record_minimo == None:
-                    inputbox = InputBox(self.pantalla)
-                    nombre = inputbox.recoger_nombre()
-                    bd.guardarRecords(nombre, self.marcador.valor)
-                    salir = True
-                elif record_minimo != None and record_minimo < self.marcador.valor:
-                    inputbox = InputBox(self.pantalla)
-                    nombre = inputbox.recoger_nombre()
-                    bd.actualizarRecord(
-                        nombre, self.marcador.valor, record_minimo)
-                    salir = True
-                else:
-                    pg.mixer.music.stop()
-                    salir = True
+            if contador_juego == 110:
+                self.lanzarRecord()
+                salir = True
 
             # Actualización de todos los elementos que se están mostrando en la partida
             pg.display.flip()
 
             # Para cerrar el juego si se pierden todas las vidas
             if self.marcador.vidas == 0:
+                self.pintar_fin_nivel("HAS PERDIDO :(")
                 game_over = True
-                pg.mixer.music.fadeout(MUSICA_FADE_OUT)
-                bd = GestorBD(RUTA)
-                record_minimo = bd.comprobarRecord()
-                if record_minimo == None:
-                    inputbox = InputBox(self.pantalla)
-                    nombre = inputbox.recoger_nombre()
-                    bd.guardarRecords(nombre, self.marcador.valor)
-                    salir = True
-                elif record_minimo != None and record_minimo < self.marcador.valor:
-                    inputbox = InputBox(self.pantalla)
-                    nombre = inputbox.recoger_nombre()
-                    bd.actualizarRecord(
-                        nombre, self.marcador.valor, record_minimo)
-                    salir = True
-                else:
-                    pg.mixer.music.stop()
-                    salir = True
+                self.lanzarRecord()
+                salir = True
 
         return game_over
-
-    # -------------MÉTODOS DE FUNCIONAMIENTO DIFERENTES DEL NIVEL 1 (EN PROGRESO)-----------#
-
-    def crear_meteoritos(self):
-        """"Este método genera los meteoritos grandes al inicio de la partida, les asigna puntuación y
-        es llamado de nuevo desde el método regenerar las veces que el meteorito finaliza su ciclo de vida"""""
-        cantidad_meteoritos = random.randrange(2, 4)
-        for i in range(cantidad_meteoritos):
-            puntos = (i + 25) - i
-            meteorito = Meteorito(puntos)
-            self.meteoritos.add(meteorito)
-
-    def crear_meteoritos_m(self):
-        """"Este método genera los meteoritos medianos al inicio de la partida, les asigna puntuación
-         y es llamado de nuevo desde el método regenerar las veces que el meteorito finaliza su ciclo de vida"""""
-        cantidad_meteoritos_m = random.randrange(3, 4)
-        for i in range(cantidad_meteoritos_m):
-            puntos_m = (i + 50) - i
-            meteorito_m = MeteoritoMediano(puntos_m)
-            self.meteoritos_m.add(meteorito_m)
 
 
 class PantallaRecords(Pantalla):
@@ -445,6 +405,9 @@ class PantallaRecords(Pantalla):
         self.tipografia = pg.font.Font(font_file, 25)
         self.tipo_titulos = pg.font.Font(font_file, 30)
         self.tipo_reiniciar = pg.font.Font(font_file, 30)
+
+        # Para almacenar los valores de NOMBRE y PUNTOS en listas independientes
+        # para poder ser renderizados
         self.nombres_record = []
         self.nombres_render = []
         self.puntos_record = []
@@ -452,8 +415,6 @@ class PantallaRecords(Pantalla):
 
     def bucle_principal(self):
         salir = False
-    # Para almacenar los valores de NOMBRE y PUNTOS en listas independientes
-    # para poder ser renderizados
         pg.mixer.music.play(-1)
         self.cargar_datos()
 
@@ -513,7 +474,7 @@ class PantallaRecords(Pantalla):
         "Este método hace el pintado de información (títulos y datos) de los records"
         # para pintar los títulos de los records
         pos_x_titulo = 300
-        pos_x_titulo2 = 600
+        pos_x_titulo2 = 560
         pos_y_titulo = 100
         titulo_nombre = "NOMBRE"
         titulo_puntos = "PUNTOS"
@@ -543,7 +504,7 @@ class PantallaRecords(Pantalla):
             self.pantalla.blit(puntos[j], (pos_x2, pos_y2))
 
         # para pintar el mensaje de volver a jugar
-        texto_reiniciar = "Pulsa 'ESPACIO' para jugar de nuevo"
+        texto_reiniciar = 'Pulsa "ESPACIO" para jugar de nuevo'
         reiniciar_render = self.tipo_reiniciar.render(
             texto_reiniciar, True, COLOR_TEXTO2)
         ancho_texto = reiniciar_render.get_width()
