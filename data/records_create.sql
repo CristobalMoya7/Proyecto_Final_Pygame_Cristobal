@@ -1,0 +1,6 @@
+CREATE TABLE "records" (
+	"id"	INTEGER NOT NULL,
+	"nombre"	TEXT NOT NULL,
+	"puntos"	NUMERIC NOT NULL,
+	PRIMARY KEY("id" AUTOINCREMENT)
+)
