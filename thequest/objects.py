@@ -7,7 +7,7 @@ from pygame.sprite import Sprite
 from . import ANCHO_P, ALTO_P, COLOR_TEXTO2, FPS, MARGEN_LATERAL, POS_PLANETA, PUNTOS_PARTIDA
 
 
-class Nave(Sprite):
+class Nave(Sprite): # Objeto nave
 
     def __init__(self):
         super().__init__()
@@ -26,16 +26,13 @@ class Nave(Sprite):
         self.rotacion = False
         self.fin_rotacion = False
 
-    def esconder_nave(self):
-        """Este método permite posicionar la nave en un punto lejano de la pantalla tras morir
-        para simular un refresco (1ª versión)"""
+    def esconder_nave(self): # Posicion nave
         self.tiempo_renacer = pg.time.get_ticks()/1000
         self.nave_escondida = True
         self.rect.centery = -1000
         self.rect.x = -1000
 
-    def aterrizar_nave(self, aterrizando, pantalla):
-        """Este método hace las maniobras de aterrizaje de la nave"""
+    def aterrizar_nave(self, aterrizando, pantalla): # Aterrizaje
         self.nave_aterrizando = aterrizando
         if aterrizando:
             self.rect.x += self.velocidad_aterrizar
@@ -46,6 +43,7 @@ class Nave(Sprite):
 
             if self.rect.x > ANCHO_P/2 + 45:
                 self.rect.x = ANCHO_P/2 + 45
+                self.rect.centery = ALTO_P/2
                 self.rotacion = True
 
                 if self.angulo == 180:
@@ -65,8 +63,7 @@ class Nave(Sprite):
             else:
                 pantalla.blit(self.image, self.rect)
 
-    def mover_nave(self, aterrizando):
-        "Estos son los controles que permiten mover la nave"
+    def mover_nave(self, aterrizando): # Mover nave
         tecla_mov = pg.key.get_pressed()
         if not aterrizando:
             if tecla_mov[pg.K_UP]:
@@ -78,9 +75,7 @@ class Nave(Sprite):
                 if self.rect.bottom > ALTO_P:
                     self.rect.bottom = ALTO_P
 
-    def update(self):
-        """El método incluye el movimiento de la nave + la aparición de la nave
-           en su punto original tras perder una vida"""
+    def update(self): # Aparicion nave tras muerte
 
         self.mover_nave(self.nave_aterrizando)
 
@@ -92,8 +87,7 @@ class Nave(Sprite):
             self.rect.x = MARGEN_LATERAL
 
 
-class Meteorito(Sprite):
-    """Superclase Meteorito"""
+class Meteorito(Sprite): # Meteorito grande
     puntuacion = PUNTOS_PARTIDA
 
     def __init__(self, puntuacion):
@@ -118,9 +112,7 @@ class Meteorito(Sprite):
         self.columnas = 8
         self.cargarFrames(self.plantilla_imagenes, self.filas, self.columnas)
 
-    def cargarFrames(self, sprite_sheet, no_fila, no_columna):
-        """Esta parte del código recorre el sprite sheet y almacena cada
-        fotograma en una lista para preparar la animación"""
+    def cargarFrames(self, sprite_sheet, no_fila, no_columna): # Preparar animacion
         for fila in range(no_fila):
             y = fila * self.h
             for columna in range(no_columna):
@@ -152,12 +144,10 @@ class Meteorito(Sprite):
         if self.rect.bottom == ALTO_P:
             self.rect.y = ALTO_P
         if self.rect.top == 0:
-            self.rect.y += 150
+            self.rect.y = 150
 
 
-class MeteoritoMediano(Meteorito):
-    """Subclase. Sólo conserva aquellos atributos que difieren de la superclase
-    Meteorito"""""
+class MeteoritoMediano(Meteorito): # Meteorito mediano
 
     def __init__(self, puntuacion):
         super().__init__(puntuacion)
@@ -165,15 +155,15 @@ class MeteoritoMediano(Meteorito):
         self.h = 85
         self.velocidad_x = random.randint(4, 6)
         self.plantilla_imagenes = pg.image.load(os.path.join(
-            "resources", "images", "aprueba.png"))
+            "resources", "images", "asteroids_medium.png"))
 
         # Para almacenar los frames del sprite sheet del meteorito mediano
         self.imagenes = []
         self.tiempo_animacion = FPS // 3
         self.cargarFrames(self.plantilla_imagenes, self.filas, self.columnas)
 
+class Planeta(Sprite): # Planeta
 
-class Planeta(Sprite):
     def __init__(self, imagen):
         self.image = imagen
         self.rect = self.image.get_rect()
@@ -188,8 +178,7 @@ class Planeta(Sprite):
                 self.rect.x = ANCHO_P - self.rect.height
 
 
-class Explosion(Sprite):
-    "Clase que pinta las explosiones de la nave cuando choca con los meteoritos"
+class Explosion(Sprite): # Explosiones nave tras colision
 
     def __init__(self, centro):
         super().__init__()
@@ -207,7 +196,7 @@ class Explosion(Sprite):
         self.act_tiempo = pg.time.get_ticks()
         self.cargarFrames()
 
-    def cargarFrames(self):
+    def cargarFrames(self): # Preparar animacion
 
         sprite_sheet = pg.image.load(os.path.join(
             "resources", "images", "imagen_explosiones.png"))
@@ -221,9 +210,6 @@ class Explosion(Sprite):
                 self.imagenes.append(image)
 
     def update(self):
-        """Aquí se ha usado un modo distinto para animar, para probar un nuevo
-        sistema de funcionamiento. Nos basamos en los ticks del juego y en el método kill
-        para reiniciar la secuencia de imágenes de la explosión"""
         ahora = pg.time.get_ticks()
         if ahora - self.act_tiempo > self.tiempo_animacion:
             self.contador += 1
@@ -236,7 +222,8 @@ class Explosion(Sprite):
                 self.image = self.imagenes[self.contador]
 
 
-class Marcador:
+class Marcador: # Marcador de puntos
+
     def __init__(self, vidas_iniciales):
         self.valor = 0
         self.vidas = vidas_iniciales
@@ -255,7 +242,9 @@ class Marcador:
         self.valor += puntos
 
     def pintar_marcador(self, pantalla):
-
+        margen_x_puntos = 600
+        margen_x_vidas = 100
+        margen_y = 30
         texto_puntos = f"Puntos: {self.valor}"
         texto_vidas = f"Vidas: {self.vidas}"
 
@@ -264,12 +253,12 @@ class Marcador:
         render_marcador = self.tipografia.render(
             str(texto_puntos), True, COLOR_TEXTO2)
 
-        pos_x_puntos = render_marcador.get_width() - 72
-        pos_y_puntos = ALTO_P - render_marcador.get_height() - 30
-        pg.surface.Surface.blit(pantalla, render_marcador,
-                                (pos_x_puntos, pos_y_puntos))
-
-        pos_x_vidas = render_vidas.get_width() - 60
-        pos_y_vidas = render_vidas.get_height() + 20
+        pos_x_vidas = render_vidas.get_width() + margen_x_vidas
+        pos_y_vidas = ALTO_P - render_vidas.get_height() - margen_y
         pg.surface.Surface.blit(pantalla, render_vidas,
                                 (pos_x_vidas, pos_y_vidas))
+
+        pos_x_puntos = render_marcador.get_width() + margen_x_puntos
+        pos_y_puntos = ALTO_P - render_marcador.get_height() - margen_y
+        pg.surface.Surface.blit(pantalla, render_marcador,
+                                (pos_x_puntos, pos_y_puntos))

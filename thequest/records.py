@@ -5,12 +5,13 @@ import sqlite3
 from . import ANCHO_P, ALTO_P, COLOR_CAJA_INPUT, COLOR_TEXTO_INPUT
 
 
-class GestorBD:
+class GestorBD: # Base de datos
+
     def __init__(self, ruta):
         self.ruta = ruta
 
-    def obtenerRecords(self):
-        "Consulta todos los records almacenados en la base de datos"
+    def obtenerRecords(self): # Consultar records BASE DE DATOS
+        
         consulta = "SELECT * FROM records ORDER BY puntos DESC LIMIT 10"
 
         # 1- Conectar con la base de datos
@@ -40,8 +41,7 @@ class GestorBD:
         conexion.close()
         return records
 
-    def comprobarRecord(self):
-        "Este método comprueba el valor mínimo cuando todos los registros han sido completados"
+    def comprobarRecord(self): # Comprobar valor minimo de records añadidos
         lista_records = []
         records = self.obtenerRecords()
         # Se eliminan las claves innecesarias para la comprobación
@@ -58,8 +58,7 @@ class GestorBD:
             valor_minimo = min(lista_records)
             return valor_minimo
 
-    def actualizarRecord(self, nombre, puntos, puntos_minimos):
-        "Este método actualiza los records si el TOP 10 está lleno"
+    def actualizarRecord(self, nombre, puntos, puntos_minimos): # Actualizar records si esta lleno
         consulta = "UPDATE records SET nombre = (?), puntos = (?)  WHERE puntos = (?)"
         conexion = sqlite3.connect(self.ruta)
         cursor = conexion.cursor()
@@ -67,8 +66,7 @@ class GestorBD:
         conexion.commit()
         conexion.close()
 
-    def guardarRecords(self, nombre, puntos):
-        "Guarda nuevo record en la base de datos"
+    def guardarRecords(self, nombre, puntos): # Guardar nuevo records
         consulta = "INSERT INTO records (nombre,puntos) VALUES (?,?)"
         conexion = sqlite3.connect(self.ruta)
         cursor = conexion.cursor()
@@ -76,18 +74,9 @@ class GestorBD:
         conexion.commit()
         conexion.close()
 
-    def eliminarRecords(self):
-        "Método para pruebas. Manejar con cuidado. Elimina todos los datos"
-        consulta = "DELETE FROM records"
-        conexion = sqlite3.connect(self.ruta)
-        cursor = conexion.cursor()
-        cursor.execute(consulta)
-        conexion.commit()
-        conexion.close()
-
 
 class InputBox:
-
+    
     def __init__(self, pantalla: pg.Surface):
         font_file = os.path.join(
             "resources", "fonts", "game_sans_serif_7.ttf")
@@ -96,7 +85,7 @@ class InputBox:
         self.color_fondo = COLOR_CAJA_INPUT
         self.color_texto = COLOR_TEXTO_INPUT
         self.pantalla = pantalla
-        self.padding = 30
+        self.espacio = 30
         self.pintar_elementos_fijos()
 
     def recoger_nombre(self):
@@ -131,12 +120,12 @@ class InputBox:
     def pintar_elementos_fijos(self):
 
         self.titulo = self.tipografia.render(
-            "¡RECORD! INSERTA TUS INICIALES(3)", True, self.color_texto, self.color_fondo)
+            "GUAU NUEVO RECORD!!! INSERTA TUS INICIALES (3) - (PULSA 'INTRO' PARA TERMINAR)", True, self.color_texto, self.color_fondo)
         self.x_titulo = (ANCHO_P-self.titulo.get_width())//2
-        self.y_titulo = (ALTO_P-self.titulo.get_height())//2
+        self.y_titulo = (ALTO_P-self.titulo.get_height())//3
 
-        x_fondo = self.x_titulo - self.padding
-        y_fondo = self.y_titulo - self.padding
-        w_fondo = self.titulo.get_width() + self.padding * 2
-        h_fondo = self.titulo.get_height() * 2 + self.padding * 2
+        x_fondo = self.x_titulo - self.espacio
+        y_fondo = self.y_titulo - self.espacio
+        w_fondo = self.titulo.get_width() + self.espacio * 3
+        h_fondo = self.titulo.get_height() * 2 + self.espacio * 2
         self.fondo = pg.Rect(x_fondo, y_fondo, w_fondo, h_fondo)
