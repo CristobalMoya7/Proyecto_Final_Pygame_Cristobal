@@ -26,3 +26,5 @@ con los datos añadidos en data/records_create.sql
 
 6º Para iniciar el juego debemos tener el entorno activado, una vez con todo lo anterior realiazado,
 vamos al archivo main e iniciamos el programa.
+
+7º En caso de querer cambiar el numero de vidas simplemente cambialo desde el archivo __init__.py

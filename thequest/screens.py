@@ -66,10 +66,9 @@ class PantallaPrincipal(Pantalla):
         posiciones = [275, 350, 400, 450, 500, 550]
         mensajes = ["Como jugar:", "1. Pulsa ARRIBA/ABAJO para mover la nave.",
                     "2. Esquiva los meteoritos para ganar puntos.",
-                    "3. Consigue sobrevivir para llegar al nivel 2.",
-                    "4. Tienes 3 vidas. "
-                    "5. Pierdes vidas si chocas con los meteoritos.",
-                    "6. Aguanta el tiempo suficiente para aterrizar en el planeta."]
+                    "3. Tienes 3 vidas.",
+                    "4. Pierdes vidas si chocas con los meteoritos.",
+                    "5. Aguanta el tiempo suficiente para aterrizar en el planeta."]
 
         pos_x = ANCHO_P//5
         conta_posiciones = 0
@@ -133,7 +132,7 @@ class PantallaHistoria(Pantalla): # Historia
 
         # Pinta el texto de la historia
         posiciones = [300, 350, 400, 475, 525]
-        mensajes = ["Año 2034, la tierra ha sido destruida debido a la contaminación.",
+        mensajes = ["Año 2034, la tierra ha sido destruida debido a la contaminacion.",
                     "Los unicos supervivientes viajan en una nave espacial,",
                     "en busca de un nuevo planeta habitable.",
                     "Sobrevive a los grandes peligros del espacio ",
