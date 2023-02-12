@@ -24,4 +24,4 @@ PUNTOS_M_2 = 50
 PUNTOS_M_DR = 1000
 PUNTOS_PARTIDA = 0
 RUTA = 'data/records.db'
-VIDAS = 50
+VIDAS = 3
